@@ -43,6 +43,7 @@ const schema = z.object({
   GOOGLE_SERVICE_ACCOUNT_EMAIL:z.string().email().optional().default("service@example.com"),
   GOOGLE_PRIVATE_KEY:z.string().min(1).optional().default(""),
   GOOGLE_SHEETS_ENABLED:z.coerce.boolean().default(true),
+  SHEET_BACKUP_ENABLED:z.coerce.boolean().default(true),
   GOOGLE_SPREADSHEET_ID:z.string().min(1).optional().default(""),
   
   MAX_FILE_SIZE_MB:z.coerce.number().default(25),

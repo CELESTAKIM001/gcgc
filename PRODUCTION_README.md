@@ -29,7 +29,7 @@ Create these tabs in the configured spreadsheet before production:
 - `Documents`
 - `Audit`
 
-The first row in each tab should use the column order documented in `lib/google.ts` / `lib/backup.ts`.
+The first row in each tab should use the column order documented in `lib/google.ts` / `lib/backup.ts`. The QR verification endpoint is public and exposes only authenticity status, ID, issue time and hash.
 
 ## Daraja callback
 The configured value is the base URL:
