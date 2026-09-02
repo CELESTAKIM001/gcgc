@@ -1,4 +1,0 @@
-import { MongoClient } from 'mongodb'; import bcrypt from 'bcryptjs';
-const uri=process.env.MONGODB_URI, dbName=process.env.MONGODB_DB_NAME, email=process.env.ADMIN_EMAIL, name=process.env.ADMIN_NAME||'GLDC Administrator', password=process.env.ADMIN_INITIAL_PASSWORD;
-if(!uri||!dbName||!email||!password) throw new Error('Set MONGODB_URI, MONGODB_DB_NAME, ADMIN_EMAIL, ADMIN_INITIAL_PASSWORD');
-const [firstName,...rest]=name.split(' ');const client=new MongoClient(uri);await client.connect();const db=client.db(dbName);const exists=await db.collection('users').findOne({email:email.toLowerCase()});if(exists){console.log('Admin already exists:',email)}else{await db.collection('users').insertOne({firstName,lastName:rest.join(' '),email:email.toLowerCase(),passwordHash:await bcrypt.hash(password,12),role:'admin',status:'approved',emailVerified:true,createdAt:new Date(),updatedAt:new Date()});console.log('Admin created:',email)}await client.close();
