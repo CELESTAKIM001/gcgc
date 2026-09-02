@@ -1,4 +1,0 @@
-import "server-only"; import crypto from 'node:crypto';
-const key=()=>{const raw=process.env.ENCRYPTION_KEY||'';if(!raw)return null;return crypto.createHash('sha256').update(raw).digest()};
-export function encrypt(value:string){const k=key();if(!k)return value;const iv=crypto.randomBytes(12);const c=crypto.createCipheriv('aes-256-gcm',k,iv);const enc=Buffer.concat([c.update(value,'utf8'),c.final()]);return `enc:${iv.toString('base64')}:${c.getAuthTag().toString('base64')}:${enc.toString('base64')}`}
-export function decrypt(value:string){const k=key();if(!k||!value.startsWith('enc:'))return value;const [,ivS,tagS,dataS]=value.split(':');const d=crypto.createDecipheriv('aes-256-gcm',k,Buffer.from(ivS,'base64'));d.setAuthTag(Buffer.from(tagS,'base64'));return Buffer.concat([d.update(Buffer.from(dataS,'base64')),d.final()]).toString('utf8')}
