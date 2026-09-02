@@ -1,0 +1,2 @@
+import ContentPage from '../content-page';
+export default function Page(){return <ContentPage eyebrow="CLIENT VOICE" title="What clients say"><div className="card"><p>GLDC is building a professional, transparent consultancy platform around land, design, planning and project delivery.</p><p>For current project enquiries and service information, contact the team through the project enquiry workflow.</p></div></ContentPage>}

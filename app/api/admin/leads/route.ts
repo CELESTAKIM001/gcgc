@@ -1,0 +1,2 @@
+import {NextResponse} from 'next/server'; import {requireAdmin} from '@/lib/admin'; import {getDb} from '@/lib/db';
+export async function GET(){try{await requireAdmin();const db=await getDb();const rows=await db.collection('leads').find({}).sort({createdAt:-1}).limit(200).toArray();return NextResponse.json(rows.map(x=>({...x,id:String(x._id),_id:undefined,memberId:x.memberId?String(x.memberId):undefined})))}catch(e:any){return NextResponse.json({error:e.message},{status:e.message==='FORBIDDEN'?403:400})}}

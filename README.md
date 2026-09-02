@@ -5,7 +5,7 @@ Next.js + MongoDB + Daraja + SMTP + Google Drive/Sheets foundation for Gavin Lan
 ## Key production rules
 - Copy `.env.example` to `.env.local` for local development only. Never commit real secrets.
 - On Vercel, put secrets in Project Settings → Environment Variables, scoped to Production as required. Do not use `NEXT_PUBLIC_` for secrets.
-- `DARAJA_CALLBACK_URL` is deliberately **only** `https://api.gldc.co.ke` in the configuration. The root POST handler accepts Daraja callbacks when the request arrives on the `api.gldc.co.ke` hostname. No `/api/payments/mpesa/callback` is used as the configured callback URL.
+- `DARAJA_CALLBACK_URL` may be set to `https://api.gldc.co.ke`. A host-aware middleware rewrite sends POST requests arriving at that domain root to the internal `/api/payments/mpesa/callback` handler.
 - Daraja configuration follows the requested convention: `DARAJA_PARTY_A_SHORTCODE` is the GLDC shortcode and `DARAJA_PARTY_B_BUYGOODS_TILL` is the BuyGoods Till. The STK request still sends the customer's phone as PartyA, while the GLDC BuyGoods Till is PartyB, because those are the transaction fields expected by the M-PESA API.
 - Email registration sends a verification email before admin approval.
 - Registration captures 18 profile fields, including location and ID type/number.
