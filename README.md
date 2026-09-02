@@ -1,64 +1,34 @@
-# GLDC — Full Production Web + Management Platform
+# GLDC Vercel Production Foundation
 
-This package is the deployable Next.js application, not the HTML prototype. The prototype-reference folder is retained only as a visual/content reference and is not used as the application database.
+Next.js + MongoDB + Daraja + SMTP + Google Drive/Sheets foundation for Gavin Land & Design Consultants.
 
-## Architecture
-- Next.js 15 / React 19
-- MongoDB Atlas — primary system of record
-- Safaricom Daraja — M-PESA STK + callback reconciliation
-- SMTP — verification and notification email
-- Google Drive — document/PDF binary repository
-- Google Sheets — operational backup / export
-- SHA-256 + QR — PDF/document verification
-- HTTP-only JWT cookies + RBAC + audit logging
+## Key production rules
+- Copy `.env.example` to `.env.local` for local development only. Never commit real secrets.
+- On Vercel, put secrets in Project Settings → Environment Variables, scoped to Production as required. Do not use `NEXT_PUBLIC_` for secrets.
+- `DARAJA_CALLBACK_URL` holds the **base URL only** (e.g. `https://your-deployment.vercel.app`). The app appends `/api/payments/mpesa/callback` itself when it builds the STK push request, and Safaricom POSTs the result to the route handler at `app/api/payments/mpesa/callback/route.ts`, which updates the payment/lead status and emails the member.
+- Daraja configuration follows the requested convention: `DARAJA_PARTY_A_SHORTCODE` is the GLDC shortcode and `DARAJA_PARTY_B_BUYGOODS_TILL` is the BuyGoods Till. The STK request still sends the customer's phone as PartyA, while the GLDC BuyGoods Till is PartyB, because those are the transaction fields expected by the M-PESA API.
+- Email registration sends a verification email before admin approval.
+- Registration captures 18 profile fields, including location and ID type/number.
+- Admin API supports user list/create/update/delete and approval status changes.
+- Sensitive ID numbers can be encrypted when `ENCRYPTION_KEY` is configured.
+- Document uploads through a Vercel Function are capped below 4 MB in this sample because Vercel documents a 4.5 MB function payload limit. For larger files, use direct object storage/resumable uploads; Google Drive remains the document repository target.
+- All transactional emails (verification, membership approval, lead approval, payment confirmed/failed, admin new-lead/new-registration notifications) render from branded HTML templates in `lib/email-templates.ts` and send through `lib/email.ts`.
+- Every generated project-proof PDF (`/api/documents/project-proof`) and every member document upload (`/api/documents/upload`) is written to Google Drive and recorded in MongoDB (`documents` / `document_verifications`), so "PDF keeping" survives redeploys.
+- An admin can trigger `/api/admin/backup` (also a button on the Admin → Backup panel) at any time to snapshot Users, Leads, Payments, Documents and Document Verifications from MongoDB into named tabs in the configured Google Sheet, each with a fixed, documented column set. Every run overwrites the previous snapshot per tab and is recorded in `audit_logs`.
 
-## Main production flows
-1. Member registration → verification email → administrator approval → login.
-2. Approved member submits a project lead → administrator approves → deposit payment becomes available.
-3. M-PESA STK request is recorded before the request and updated from the Daraja callback.
-4. Documents are uploaded to Drive; metadata remains in MongoDB and is backed up to the Documents sheet.
-5. Project proof PDFs receive a unique GLDC ID, QR verification URL and SHA-256 hash, then are archived in Drive.
-6. Administrator actions create audit records and attempt Sheet backup.
-7. Management Console → Backup & Controls can run a full MongoDB-to-Sheets operational backup.
+## Vercel setup
+1. Import this folder into a Vercel project and choose Next.js.
+2. Add the variables in `.env.example` to Production in Vercel.
+3. Add the custom domains `www.gldc.co.ke` and `api.gldc.co.ke` as required by your DNS setup.
+4. Ensure `APP_URL=https://www.gldc.co.ke`, `API_URL=https://api.gldc.co.ke`, and `DARAJA_CALLBACK_URL=https://api.gldc.co.ke`.
+5. Run the one-time seed with the production env available: `node scripts-seed-admin.mjs`.
+6. Delete/rotate `ADMIN_INITIAL_PASSWORD` after the initial administrator is created.
+7. Create the Daraja production application and configure the approved callback/domain with Safaricom.
+8. Create a Google service account, share the Drive folder and Sheet with it, and set its credentials in Vercel.
+9. Use a dedicated SMTP mailbox and App Password (or transactional email provider).
 
-## Required Google Sheet tabs
-Create these tabs in the configured spreadsheet before production:
-- `Users`
-- `Leads`
-- `Payments`
-- `Documents`
-- `Audit`
+## Member workflow
+Register → verify email → admin approval → login → submit lead → admin approves lead → payment becomes available → Daraja BuyGoods STK → callback confirms payment → payment/audit records.
 
-The first row in each tab should use the column order documented in `lib/google.ts` / `lib/backup.ts`.
-
-## Daraja callback
-The configured value is the base URL:
-`https://api.gldc.co.ke`
-
-The middleware routes POST requests received at `/` on that hostname to the internal callback handler. If you use a different domain, update the middleware host condition and Vercel/DNS configuration.
-
-## File uploads
-The included Vercel upload route deliberately rejects files above 4 MB because Vercel Function request limits make large multipart uploads unsuitable. For larger production files, add a direct/resumable upload flow to Drive or an object-storage service and save only the resulting file ID/metadata in MongoDB.
-
-## Security
-Never put real secrets in Git. The provided `.env.example` contains placeholders only. Because credentials were pasted into a chat during setup, rotate the exposed MongoDB password, JWT secrets, encryption key, Daraja credentials/passkey and SMTP/app password before production deployment.
-
-## Deploy
-1. Import this folder into Vercel.
-2. Add all values from `.env.example` under Production Environment Variables.
-3. Configure the MongoDB network/user.
-4. Share the Google Drive folder and spreadsheet with the service account.
-5. Create the five Sheet tabs.
-6. Configure Daraja production callback/domain.
-7. Configure SMTP.
-8. Run the admin seed once using the production environment.
-9. Delete/rotate `ADMIN_INITIAL_PASSWORD`.
-10. Test registration, email verification, approval, lead approval, STK, callback, Drive upload, PDF verification and Sheet backup.
-
-## Local
-`npm install`
-`npm run dev`
-
-Production:
-`npm run build`
-`npm start`
+## Verification
+Project PDFs should use a random document ID and server-side verification record. QR scans should resolve to the GLDC verification page, require authentication, and check document validity/revocation before showing protected details.

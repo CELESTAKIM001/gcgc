@@ -1,63 +1,116 @@
 import "server-only";
+import { ObjectId } from "mongodb";
 import { getDb } from "./db";
-import { appendSheet, SHEET_COLUMNS } from "./google";
-import { env } from "./env";
+import { writeBackupTab } from "./google";
+import { decrypt } from "./crypto";
 
-const iso = (v:any) => v ? new Date(v).toISOString() : "";
-const str = (v:any) => v == null ? "" : String(v);
+const iso = (d: any) => (d ? new Date(d).toISOString() : "");
+const money = (n: any) => (typeof n === "number" ? n : Number(n) || 0);
 
-export async function backupUser(u:any) {
-  if (!env.GOOGLE_SHEETS_ENABLED || !env.SHEET_BACKUP_ENABLED) return;
-  await appendSheet([
-    new Date().toISOString(), str(u._id || u.id), str(u.firstName), str(u.lastName), str(u.email),
-    str(u.phone), str(u.county), str(u.town), str(u.memberType), str(u.role), str(u.status),
-    str(u.emailVerified), iso(u.createdAt), iso(u.updatedAt)
-  ], "Users!A:N", [...SHEET_COLUMNS.users]);
-}
-export async function backupLead(l:any) {
-  if (!env.GOOGLE_SHEETS_ENABLED || !env.SHEET_BACKUP_ENABLED) return;
-  await appendSheet([
-    new Date().toISOString(), str(l._id || l.id), str(l.memberId), str(l.title), str(l.location),
-    str(l.estimatedValue), str(l.status), str(l.paymentStatus), iso(l.createdAt), iso(l.updatedAt)
-  ], "Leads!A:J", [...SHEET_COLUMNS.leads]);
-}
-export async function backupPayment(p:any) {
-  if (!env.GOOGLE_SHEETS_ENABLED || !env.SHEET_BACKUP_ENABLED) return;
-  await appendSheet([
-    new Date().toISOString(), str(p._id || p.id), str(p.leadId), str(p.memberId), str(p.amount),
-    str(p.phone), str(p.status), str(p.mpesaReceiptNumber), str(p.checkoutRequestId),
-    str(p.transactionDate), iso(p.createdAt), iso(p.updatedAt)
-  ], "Payments!A:L", [...SHEET_COLUMNS.payments]);
-}
-export async function backupDocument(d:any) {
-  if (!env.GOOGLE_SHEETS_ENABLED || !env.SHEET_BACKUP_ENABLED) return;
-  await appendSheet([
-    new Date().toISOString(), str(d._id || d.id), str(d.ownerId), str(d.fileName), str(d.mimeType),
-    str(d.size), str(d.driveFileId), str(d.status), iso(d.createdAt)
-  ], "Documents!A:I", [...SHEET_COLUMNS.documents]);
-}
-export async function backupAudit(a:any) {
-  if (!env.GOOGLE_SHEETS_ENABLED || !env.SHEET_BACKUP_ENABLED) return;
-  await appendSheet([
-    new Date().toISOString(), str(a._id || a.id), str(a.action), str(a.actorId), str(a.entityId),
-    JSON.stringify(a.details || {}), iso(a.createdAt)
-  ], "Audit!A:G", [...SHEET_COLUMNS.audit]);
+// Masks an encrypted ID number down to its last 4 characters for the backup sheet.
+function maskId(v: any) {
+  if (!v) return "";
+  try {
+    const plain = decrypt(String(v));
+    return plain.length > 4 ? `****${plain.slice(-4)}` : "****";
+  } catch {
+    return "****";
+  }
 }
 
-export async function backupAllToSheets() {
-  if (!env.GOOGLE_SHEETS_ENABLED || !env.SHEET_BACKUP_ENABLED) return { enabled: false };
+const USERS_HEADER = [
+  "ID", "First Name", "Last Name", "Email", "Phone", "Alt Phone", "Date of Birth",
+  "Nationality", "ID Type", "ID Number (masked)", "Gender", "Address", "County",
+  "Town", "Postal Code", "Occupation", "Organization", "Member Type", "Role",
+  "Status", "Email Verified", "Created At", "Updated At",
+];
+
+const LEADS_HEADER = [
+  "ID", "Member ID", "Title", "Description", "Location", "Estimated Value (KES)",
+  "Status", "Payment Status", "Created At", "Updated At",
+];
+
+const PAYMENTS_HEADER = [
+  "ID", "Lead ID", "Member ID", "Amount (KES)", "Phone", "Description", "Status",
+  "M-Pesa Receipt", "Checkout Request ID", "Merchant Request ID", "Created At", "Updated At",
+];
+
+const DOCUMENTS_HEADER = [
+  "ID", "Owner ID", "File Name", "Mime Type", "Size (bytes)", "Drive File ID",
+  "Drive View URL", "Status", "Created At",
+];
+
+const VERIFICATIONS_HEADER = [
+  "Document ID", "Project ID", "Member ID", "Status", "Document Hash (SHA-256)",
+  "Drive File ID", "Issued At",
+];
+
+export async function runFullBackup(triggeredBy: string) {
   const db = await getDb();
-  const [users, leads, payments, documents, audit] = await Promise.all([
-    db.collection("users").find({}, {projection:{passwordHash:0,emailVerificationTokenHash:0}}).sort({createdAt:1}).toArray(),
-    db.collection("leads").find({}).sort({createdAt:1}).toArray(),
-    db.collection("payments").find({}).sort({createdAt:1}).toArray(),
-    db.collection("documents").find({}).sort({createdAt:1}).toArray(),
-    db.collection("audit_logs").find({}).sort({createdAt:1}).toArray(),
+  const now = new Date();
+
+  const [users, leads, payments, documents, verifications] = await Promise.all([
+    db.collection("users").find({}).sort({ createdAt: -1 }).toArray(),
+    db.collection("leads").find({}).sort({ createdAt: -1 }).toArray(),
+    db.collection("payments").find({}).sort({ createdAt: -1 }).toArray(),
+    db.collection("documents").find({}).sort({ createdAt: -1 }).toArray(),
+    db.collection("document_verifications").find({}).sort({ issuedAt: -1 }).toArray(),
   ]);
-  for (const u of users) await backupUser(u);
-  for (const l of leads) await backupLead(l);
-  for (const p of payments) await backupPayment(p);
-  for (const d of documents) await backupDocument(d);
-  for (const a of audit) await backupAudit(a);
-  return { enabled: true, users:users.length, leads:leads.length, payments:payments.length, documents:documents.length, audit:audit.length };
+
+  const results = await Promise.all([
+    writeBackupTab(
+      "Users",
+      USERS_HEADER,
+      users.map((u: any) => [
+        String(u._id), u.firstName || "", u.lastName || "", u.email || "", u.phone || "",
+        u.alternatePhone || "", u.dateOfBirth || "", u.nationality || "", u.idType || "",
+        maskId(u.idNumber), u.gender || "", u.address || "", u.county || "", u.town || "",
+        u.postalCode || "", u.occupation || "", u.organization || "", u.memberType || "",
+        u.role || "", u.status || "", u.emailVerified ? "Yes" : "No", iso(u.createdAt), iso(u.updatedAt),
+      ])
+    ),
+    writeBackupTab(
+      "Leads",
+      LEADS_HEADER,
+      leads.map((l: any) => [
+        String(l._id), String(l.memberId || ""), l.title || "", l.description || "",
+        l.location || "", money(l.estimatedValue), l.status || "", l.paymentStatus || "",
+        iso(l.createdAt), iso(l.updatedAt),
+      ])
+    ),
+    writeBackupTab(
+      "Payments",
+      PAYMENTS_HEADER,
+      payments.map((p: any) => [
+        String(p._id), String(p.leadId || ""), String(p.memberId || ""), money(p.amount),
+        p.phone || "", p.description || "", p.status || "", p.mpesaReceiptNumber || "",
+        p.checkoutRequestId || "", p.merchantRequestId || "", iso(p.createdAt), iso(p.updatedAt),
+      ])
+    ),
+    writeBackupTab(
+      "Documents",
+      DOCUMENTS_HEADER,
+      documents.map((d: any) => [
+        String(d._id), String(d.ownerId || ""), d.fileName || "", d.mimeType || "",
+        d.size || 0, d.driveFileId || "", d.driveViewUrl || "", d.status || "", iso(d.createdAt),
+      ])
+    ),
+    writeBackupTab(
+      "Document Verifications",
+      VERIFICATIONS_HEADER,
+      verifications.map((v: any) => [
+        v.documentId || "", String(v.projectId || ""), String(v.memberId || ""),
+        v.status || "", v.documentHash || "", v.driveFileId || "", iso(v.issuedAt),
+      ])
+    ),
+  ]);
+
+  await db.collection("audit_logs").insertOne({
+    action: "ADMIN_BACKUP_TO_SHEETS",
+    actorId: ObjectId.isValid(triggeredBy) ? new ObjectId(triggeredBy) : triggeredBy,
+    details: { tabs: results, runAt: now },
+    createdAt: now,
+  });
+
+  return { ok: true, runAt: now.toISOString(), tabs: results };
 }

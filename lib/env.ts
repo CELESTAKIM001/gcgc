@@ -9,6 +9,8 @@ const schema = z.object({
   TIMEZONE:z.string().default("Africa/Nairobi"),
   CURRENCY:z.string().default("KES"),
   ADMIN_PATH:z.string().startsWith("/").default("/admin"),
+  ADMIN_EMAIL:z.string().email().optional().default(""),
+  ADMIN_NAME:z.string().optional().default("GLDC Administrator"),
   
   MONGODB_URI:z.string().min(1).optional().default(""),
   MONGODB_DB_NAME:z.string().min(1).optional().default("gldc"),
@@ -43,7 +45,6 @@ const schema = z.object({
   GOOGLE_SERVICE_ACCOUNT_EMAIL:z.string().email().optional().default("service@example.com"),
   GOOGLE_PRIVATE_KEY:z.string().min(1).optional().default(""),
   GOOGLE_SHEETS_ENABLED:z.coerce.boolean().default(true),
-  SHEET_BACKUP_ENABLED:z.coerce.boolean().default(true),
   GOOGLE_SPREADSHEET_ID:z.string().min(1).optional().default(""),
   
   MAX_FILE_SIZE_MB:z.coerce.number().default(25),

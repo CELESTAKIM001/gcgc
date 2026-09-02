@@ -1,9 +1,8 @@
 # GLDC Vercel production setup checklist
 
 ## Domains
-- `www.gldc.co.ke` → primary web domain
-- `api.gldc.co.ke` → same Vercel project may receive the Daraja callback at `/` through host-aware routing
-- The Daraja callback environment value is **exactly** `https://api.gldc.co.ke` (no `/api/...` suffix).
+- `www.gldc.co.ke` (or your `*.vercel.app` deployment URL) → primary web domain
+- `DARAJA_CALLBACK_URL` holds the base URL only (no path). The app appends `/api/payments/mpesa/callback` when it sends the STK push request, and Safaricom calls that exact route.
 
 ## Environment variables
 Add `.env.example` values in Vercel → Project → Settings → Environment Variables. Keep secret values out of Git. Vercel supports Production/Preview/Development scoping; redeploy after changing environment values.
