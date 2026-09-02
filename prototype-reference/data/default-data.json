@@ -1,0 +1,122 @@
+{
+  "settings": {
+    "company": "Gavin Land & Design Consultants",
+    "shortName": "GLDC",
+    "tagline": "Gets it Done",
+    "phone": "+254 700 000 000",
+    "whatsapp": "254700000000",
+    "email": "info@gldc.example",
+    "location": "Nairobi, Kenya",
+    "hours": "Mon\u2013Fri, 8:00 AM\u20135:00 PM"
+  },
+  "content": {
+    "home.hero.title": "Land. Design. Development. Done Right.",
+    "home.hero.subtitle": "Professional consultancy solutions for land development, planning and design.",
+    "home.hero.primary": "REQUEST A QUOTE",
+    "home.hero.secondary": "VIEW PROJECTS",
+    "home.about.title": "Practical expertise from land to development.",
+    "home.about.body": "GLDC brings land, design, planning and project consultancy together so clients can move from an idea to an executable development path.",
+    "home.cta.title": "Ready to get your project moving?",
+    "home.cta.body": "Tell us what you are planning and our team can guide the next step.",
+    "footer.description": "Professional Land \u2022 Design \u2022 Development Consultancy"
+  },
+  "leads": [
+    {
+      "id": "GLDC-LEAD-0001",
+      "name": "Demo Client",
+      "service": "Architectural Design",
+      "location": "Nairobi",
+      "status": "NEW",
+      "priority": "High",
+      "created": "2026-09-02",
+      "email": "client@example.com",
+      "phone": "+254 711 111 111"
+    }
+  ],
+  "clients": [
+    {
+      "id": "GLDC-CLI-0001",
+      "name": "Demo Client",
+      "company": "Demo Development Ltd",
+      "email": "client@example.com",
+      "phone": "+254 711 111 111",
+      "status": "ACTIVE"
+    }
+  ],
+  "projects": [
+    {
+      "id": "GLDC-PRJ-0001",
+      "name": "Residential Development \u2014 Nairobi",
+      "client": "Demo Client",
+      "status": "DESIGN",
+      "value": 1250000,
+      "progress": 62
+    }
+  ],
+  "tasks": [
+    {
+      "id": "TASK-0001",
+      "title": "Prepare concept design",
+      "project": "GLDC-PRJ-0001",
+      "assigned": "Project Manager",
+      "status": "IN PROGRESS",
+      "due": "2026-09-08"
+    }
+  ],
+  "quotes": [
+    {
+      "id": "GLDC-Q-2026-0001",
+      "client": "Demo Client",
+      "project": "GLDC-PRJ-0001",
+      "total": 185000,
+      "status": "SENT",
+      "date": "2026-09-01"
+    }
+  ],
+  "invoices": [
+    {
+      "id": "GLDC-INV-2026-0001",
+      "client": "Demo Client",
+      "project": "GLDC-PRJ-0001",
+      "total": 92500,
+      "paid": 46250,
+      "status": "PARTIALLY PAID"
+    }
+  ],
+  "payments": [
+    {
+      "id": "GLDC-PAY-2026-0001",
+      "invoice": "GLDC-INV-2026-0001",
+      "amount": 46250,
+      "method": "M-Pesa",
+      "status": "SUCCESSFUL",
+      "date": "2026-09-01"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "NOT-0001",
+      "type": "NEW ENQUIRY",
+      "channel": "IN-APP",
+      "message": "A new project enquiry is ready for review.",
+      "time": "2026-09-02 15:40",
+      "read": false
+    }
+  ],
+  "audit": [
+    {
+      "time": "2026-09-02 15:40",
+      "user": "Demo Admin",
+      "action": "Lead created",
+      "entity": "GLDC-LEAD-0001",
+      "result": "SUCCESS"
+    },
+    {
+      "time": "2026-09-02 15:45",
+      "user": "Demo Admin",
+      "action": "Payment recorded",
+      "entity": "GLDC-PAY-2026-0001",
+      "result": "SUCCESS"
+    }
+  ]
+}

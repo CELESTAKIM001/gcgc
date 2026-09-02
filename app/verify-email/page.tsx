@@ -1,0 +1,2 @@
+'use client'; import {useEffect,useState} from 'react';
+export default function VerifyEmail(){const [msg,setMsg]=useState('Verifying…');useEffect(()=>{fetch('/api/auth/verify-email'+location.search).then(r=>r.json()).then(j=>setMsg(j.message||j.error))},[]);return <main className="shell"><section className="card narrow"><img src="/gldc-logo.png"/><h1>Email Verification</h1><p>{msg}</p></section></main>}

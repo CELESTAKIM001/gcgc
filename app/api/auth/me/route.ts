@@ -1,0 +1,2 @@
+import { NextResponse } from "next/server"; import { currentUser } from "@/lib/auth"; import { getDb } from "@/lib/db"; import { ObjectId } from "mongodb";
+export async function GET(){const me=await currentUser();if(!me)return NextResponse.json({error:"Unauthorized"},{status:401});const db=await getDb();const u=await db.collection("users").findOne({_id:new ObjectId(me.id)},{projection:{passwordHash:0,emailVerificationTokenHash:0}});return NextResponse.json({user:u?{...u,id:String(u._id),_id:undefined}:null})}
